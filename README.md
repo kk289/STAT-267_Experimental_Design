@@ -5,4 +5,4 @@ Projects Listed:
 2. IVFluids
 3. Checking Assumptions
 4. CB Design
-5. 
+5. Imaginary and Working Memory (Term Project)
