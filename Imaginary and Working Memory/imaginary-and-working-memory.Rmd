@@ -1,0 +1,219 @@
+---
+title: "STAT 267 - Term Project"
+author: "Kevil Khadka"
+subtitle: Imagery and Working Memory
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(readr)
+```
+
+## Instruction
+
+The goal of this project is to perform a statistical analysis on an experiment using R. You are asked to provide an appropriate R code in the R code chucks and use the R output to answer the questions.
+
+## Background of the experiment
+
+According to the theory of hemispheric specialization, people to use different sides of their brain for visual and verbal tasks. Typically, according to a lot of recent research, we use the right side for visual tasks and the left side for verbal tasks. The purpose of this experiment by R. L. Brooks was to add to such research, by deciding which of two predictions about interaction was more nearly correct. One prediction comes from assuming that our working memory handles verbal and visual tasks separately; the other come from a theory that working memory must handle both kinds of tasks together.To compare these theories, Brook devised two kinds of tasks. 
+The verbal task was to scan a sentence like "The pencil is on the desk" and decide whether each word was a noun or not. (The correct response is "No Yes No No No Yes.") 
+The visual task was to scan a block letter like the F shown below, starting at the arrow, and decide whether each corner was an outside corner or not. (The correct response is "Yes Yes Yes Yes No No Yes Yes No Yes.")
+
+```{r, out.width='10%', fig.align='center', echo=FALSE}
+#knitr::include_graphics('fig-final.png')
+```
+
+Brooks also devised two ways to report, one verbal and one visual. To report verbally, you would simply say Yesses or Nos out loud; to report visually, you would point in the sequence to a Yes or No om a piece of paper.
+
+If visual and verbal tasks are handled independently, then a visual task with verbal report or a verbal task with visual report would be easier and so would take less time verbal task/verbal report or visual task/visual report. The theory predicts that when the task and report were of the same kind, we would interfere with each other in memory, and slow the response time.
+
+The data from a version of the experiment run by a psychology lab at Mount Holyoke College was recorded in `memory.csv` file.
+
+## Questions
+
+Any statistical analysis starts with loading a data set into R. Make sure that the file locates at the current working directory. 
+
+**Question 1:** Write a R code to read the data set into R
+
+```{r}
+# Your R code goes here
+memory <- read_csv("/System/Volumes/Data/University of Evansville/FALL 2019/STAT 267/Term_project/memory.csv")
+print(memory)
+```
+
+
+**Question 2:** Compute condition averages for the basic factors of interest. Then draw an interaction graph and discuss the meaning of the pattern in light of the two predictions. (The response times are in seconds.)
+
+```{r}
+# group_average
+group_average <- memory %>%
+  group_by(task, report) %>%
+  summarize(group_avg = mean(response))
+
+# interaction graph
+ggplot(group_average, aes(x = task, y = group_avg, group = report, color = report)) + geom_point(size = 2) + geom_path(size = 2) + labs(title = "Interaction Graph")
+```
+Interaction graph shows there are difference between the two tasks. So, interaction should be included. And the response time for different type of task is difference which depends upon the type of report.  
+
+**Question 3:** Construct a scatter-plot (i.e., a parallel dot graph), where x-axis represents the combined level and y-axis represents the response times. Comment on the way the response times are distributed within each of the four groups.
+
+```{r}
+memory_unite <- memory %>% 
+  unite(group, task, report, 
+        sep = '/')
+
+#Parallel dot graph
+ggplot(data = memory_unite) +
+  geom_point(mapping = aes(x = group, y = response)) 
+
+# boxplot
+ggplot(data = memory_unite) +
+  geom_boxplot(mapping = aes(x = group, y = response)) 
+```
+1st group (verbal/verbal) : equally distributed with 3 outliers (less resonse time comparing with 2nd group)
+2nd group (verbal/visual) : equally distrubuted with 1 outlier (less response time comparing with 4th group)
+3rd group (visual/verbal) : right skewness with 1 outlier (less reponse time comparing with all group)
+4th group (visual/verbal) : little bit right skewness with one outlier (has more response time comparing with all groups)
+
+All groups have similar SDs with visual/verbal has smallest response and visual/visual with highest response. All groups are skewed upwards. 
+
+**Question 4:** Draw a histogram for the subject averages. Comment on the shape of the distribution. Is it symmetrical about the center?
+
+```{r}
+# subject averages
+subject_average <- memory %>% 
+  group_by(subject) %>% 
+  summarise(subject_avg = mean(response))
+
+# histogram plot
+ggplot(data = subject_average) + 
+  geom_histogram(mapping = aes(x = subject_avg), binwidth = 3)
+```
+
+Here, the distribution of subject averages seems to be skewness towards right. So, it is not symmetrical about the center. 
+
+**Question 5:** Compare groups SDs, first using conditions as groups, then using subjects as groups. Do the data suggest transforming?
+
+```{r}
+#comparing the SDs for condition
+memory %>%  
+  group_by(task, report)%>% 
+  summarise(group_sd = sd(response))
+
+#comparing the SDs for subject
+memory %>%
+  group_by(subject) %>% 
+  summarise(subject_sd = sd(response))
+```
+
+Comparing the SDs for the condition, the largest SDs is 6.124706 (for visual/visual) and the smallest SDs is 3.371393 (for visual/verbal). Taking ratio of largest and smallest SDs, we get 1.8167. Comparing the ratio with all, the ratio is less than others so there is no evidence that we need a transformation. 
+
+Comparing the SDs for the subject, the largest SDs is 10.174039 (for subject 20) and the smallest SDs is 2.119284 (for subject 1). Taking ratio of largest and smallest SDs, we get 4.8006. As the ratio seems larger than other three, we may need to transform. 
+
+**Question 6:**Transform to logs; then redo the interaction graph, the parallel dot graph. Does the transforming help?
+
+```{r}
+# log transformation of response
+memory %>% mutate(log_response = log(response)) -> memory
+
+# group_average after log transformation
+group_average_log <- memory %>% 
+  group_by(task, report) %>% 
+  summarise(group_avg_log = mean(log_response))
+
+# interaction graph
+ggplot(group_average_log, aes(x = task, y = group_avg_log, group = report, color = report)) + 
+  geom_point(size = 2) + geom_path(size = 2) + labs(title = "Interaction Graph")
+
+memory_log_unite <- memory %>% 
+  unite(group, task, report, 
+        sep = "/")
+
+# Parallel dot graph after log transfromation of response
+ggplot(data = memory_log_unite) +
+  geom_point(mapping = aes(x = group, y = log_response))
+
+# boxplot
+ggplot(data = memory_log_unite) +
+  geom_boxplot(mapping = aes(x = group, y = log_response))
+```
+
+Even after the log transforatiom, it seems the interaction plot looks same as before. so, it is clear that interaction between task and report is important. From Parallel dot graph, all groups have same SDs. Log Transformation is good idea to get better result, it helped.  
+
+**Question 7:** Decompose the data, get the ANOVA table, and state your conclusion.
+
+```{r}
+mod <- lm(log_response ~ task + report + task:report + factor(subject), data = memory)
+summary(mod)
+
+# ANOVA analysis
+anova(mod)
+```
+
+From ANOVA table, there is strong evidence to suggest that the mean of response time is different on groups. We can reject the null hypothesis that all groups response times are equal.
+
+**Question 8:** As part of the final ANOVA assumption checking, draw the scatter plot of residuals versus fitted values. Does the plot indicate any assumption violation?
+
+```{r}
+#computed fitted values (true value)
+fitted.values(mod)
+
+#compute the residual 
+resid(mod)
+
+#true value vs residuals
+ggplot() + geom_point(aes(x = fitted.values(mod), y = resid(mod)))
+
+
+# OR
+plot(mod, which =1)
+```
+
+Residual plot looks pretty good. There are no very large residuals. The plot does not indicate any assumption violation.  
+
+**Question 9:** Normality assumption can be checked via the QQ-plot. Create the plot and comment of the assumption.
+
+```{r}
+#QQ plot
+ggplot(mapping = aes(sample = resid(mod))) + stat_qq() + stat_qq_line()
+
+# OR
+plot(mod, which = 2)
+```
+
+Normal Q-Q plot does not look exactly linear. There is non-linearity in the middle which does not seem move too far from normality. We can assume as it is okay.
+
+**Question 10:** Compute the condition averages (for combined levels) and compare the differences using Tukey's method. Which combined task/report condition gives the slowest and the fastest response?
+
+```{r}
+# compute the averages in combined level
+group_average <- memory %>%
+  unite(group, task, report, sep = '/') %>% 
+  group_by(group) %>%
+  summarize(group_avg = mean(response))
+group_average
+
+# Tukey's method
+q <- qtukey(0.95, 4, 57) / sqrt(2)
+SE_difference <- sqrt(0.06285) * sqrt(2/20)
+
+# comparing difference each group
+# verbal/verbal
+c(12.8495 - SE_difference*q, 12.8495 + SE_difference*q)
+
+# verbal/visual
+c(13.6885 - SE_difference*q, 13.6885 + SE_difference*q)
+
+# visual/verbal
+c(9.0120 - SE_difference*q, 9.01205 + SE_difference*q)
+
+# visual/visual
+c(18.1730 - SE_difference*q, 18.1730 + SE_difference*q)
+```
+
+visual/verbal - gives fastest response. 
+visual/visual - gives slowest response.
