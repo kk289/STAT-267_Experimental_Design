@@ -1,0 +1,102 @@
+---
+title: "bird_calcium"
+author: "kevil khadka"
+subtitle: stat_267
+output:
+  pdf_document: default
+  html_document: default
+---
+
+This R markdown is the placeholder for your R codes you would use during the exam. You should write your final answers on the provided exam sheets.
+
+R codes in R markdown are organized in multiple chunks starting with three-ticks and the letter r and end with another three-ticks. The following R chunk is for loading the `tidyverse` packages
+
+```{r}
+library(tidyverse)
+```
+
+You can execute this R chunk line-by-line by move the cursor to the line of desired and hit Ctrl-Enter, or execute the whole chunk by clicking on the play button (triangular shape) on the upper-right corner of the chunk.
+
+For the problem 8, the data set is inputed as:
+
+```{r}
+bird <- tibble(
+  calcium = c(120, 124, 111, 115, 110, 
+              117, 104, 103, 116, 100, 
+              150, 142, 133, 155, 160, 
+              150, 138, 145, 140, 147), 
+  condition = rep(c("female control", 
+                    "male control", 
+                    "female treatment", 
+                    "male treatment"), each = 5))
+View(bird)
+```
+
+part (a)
+
+```{r}
+bird %>% 
+  group_by(condition) %>% 
+  summarise(group_mean = mean(calcium), 
+            group_sd = sd(calcium))
+
+ggplot() + geom_boxplot(data=bird, aes(x = condition, y = calcium))
+```
+# doesn't seem like there is any outlier.But, it looks like the SDs are not equal across different groups. So, we may need to transform the data. 
+
+part (b)
+
+```{r}
+mod <- lm(calcium ~ condition, data = bird)
+anova(mod)
+aov(mod)
+```
+## Here, P-value < 0.05. So, we reject our null hypothesis. It conclude that for birds, their body's ability to use calcium depends on the level of certain sex-related hormones in the blood.
+
+```{r}
+## Use a “quick and dirty” method
+n_condtion <- count(bird, condition_number = bird$condition)
+n_condtion
+```
+ 
+## Use a “quick and dirty” method
+# formula SE = (sq_root of MSE) / (sq_root of # of observation in each group)
+
+SE_f_con = (59.25)^1/2 / (5)^1/2  = 3.44
+SE_f_tm = (59.25)^1/2 / (5)^1/2 = 3.44
+SE_m_con = (59.25)^1/2 / (5)^1/2 = 3.44
+SE_m_tm = (59.25)^1/2 / (5)^1/2  = 3.44
+
+SE for difference = (MSE)^1/2 * (2/n)^1/2 = (59.25)^1/2 * (2/5)^1/2 = 5.925
+2 * S.E = 11.85
+
+(when Mean < 2*SE , they are equal)
+so, pair of male control - female control is equal 
+and, pair of male-treatment and female-treatment is equal. 
+
+## Fisher's LSD
+
+MSE = 59.25
+SD = 7.69
+#for balance design, 
+SE for difference = (MSE)^1/2 * (2/n)^1/2 = (59.25)^1/2 * (2/5)^1/2 = 12.1706
+t-value = qt(0.975, 16) = 2.119905
+yardstick = (t-value) * SE_for_difference = 2.119 * 12.1706 = 25.789
+
+pair of male control - female control is equal, and
+pair of male-treatment and female-treatment is equal. 
+
+## Use the Tukey’s HSD
+
+yardstick = q * SE_for_difference = 2.861 * 4.86 = 13.904
+q <- qtukey(0.95, 4, 16)/sqrt(2) = 2.861
+
+
+```{r}
+mod2 <- aov(mod)
+TukeyHSD(mod2)
+```
+
+so here, 
+pair of male control - female control is equal and,
+pair of male-treatment and female-treatment is equal. 
